@@ -1,6 +1,30 @@
 function toggleDone() {
-    $(this).parent().toggleClass("completed");
-    updateCounters();
+  var checkbox = this;
+  var listItem = $(checkbox).parent();
+
+  var todoId = listItem.data('id');
+  var isCompleted = !listItem.hasClass("completed");
+
+  $.ajax({
+    type: "PUT",
+    url: "/todos/" + todoId + ".json",
+    data: JSON.stringify({
+      todo: { completed: isCompleted }
+    }),
+    contentType: "application/json",
+    dataType: "json"})
+
+    .done(function(data) {
+      console.log(data);
+
+      if (data.completed) {
+        listItem.addClass("completed");
+      } else {
+        listItem.removeClass("completed");
+      }
+
+      updateCounters();
+    });
 }
 
 function updateCounters() {
@@ -55,9 +79,10 @@ function createTodo(title) {
 
         updateCounters();
     })
-
-    error_message = error.responseJSON.title[0];
-    showError(error_message);
+    .fail(function(error) {
+          console.log(error);
+          error_messsage = error.responseJSON.title[0];
+          showError(error_messsage);
 });
 }
 
@@ -66,6 +91,7 @@ function showError(message) {
     $("#todo_title").addClass("error");
 
     var errorElement = $("<small></small>")
+        .attr('id', 'error_messsage')
         .addClass('error')
         .html(message);
 
@@ -73,6 +99,7 @@ function showError(message) {
 }
 
 function resetErrors() {
+    console.log("resetting errors...")
     $("#error_message").remove();
     $("#todo_title").removeClass("error");
 }
@@ -86,9 +113,24 @@ function submitTodo(event) {
 }
 
 function cleanUpDoneTodos(event) {
-    event.preventDefault();
-    $.when($(".completed").remove())
-        .then(updateCounters);
+    $.each($(".completed"), function(index, listItem) {
+   $listItem = $(listItem);
+   todoId = $(listItem).data('id');
+   deleteTodo(todoId);
+   $listItem.remove();
+ });
+}
+
+function deleteTodo(todoId) {
+  $.ajax({
+    type: "DELETE",
+    url: "/todos/" + todoId + ".json",
+    contentType: "application/json",
+    dataType: "json"})
+
+    .done(function(data) {
+      updateCounters();
+    });
 }
 
 $(document).ready(function() {
